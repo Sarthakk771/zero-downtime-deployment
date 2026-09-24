@@ -15,9 +15,6 @@ echo "======================================"
 
 cd /home/ec2-user/zero-downtime-deployment
 
-echo "Updating source code..."
-git pull origin main
-
 echo "Saving current image for rollback..."
 
 if docker image inspect ${APP_NAME}:current >/dev/null 2>&1; then
@@ -51,14 +48,24 @@ sleep 10
 
 echo "Running health check..."
 
-if curl -f http://localhost:5000/health; then
+if [ "${FORCE_FAIL:-false}" = "true" ]; then
+    echo "FORCE_FAIL enabled - simulating health check failure"
+    HEALTH_CHECK_URL="http://localhost:5000/invalid-health-check"
+else
+    HEALTH_CHECK_URL="http://localhost:5000/health"
+fi
+
+if curl -f "$HEALTH_CHECK_URL"; then
+
     echo ""
     echo "======================================"
     echo "DEPLOYMENT SUCCESSFUL"
     echo "Version: $VERSION"
     echo "Server: $SERVER"
     echo "======================================"
+
 else
+
     echo ""
     echo "HEALTH CHECK FAILED"
     echo "Starting automatic rollback..."
@@ -66,15 +73,19 @@ else
     docker rm -f ${CONTAINER_NAME} 2>/dev/null || true
 
     if docker image inspect ${APP_NAME}:previous >/dev/null 2>&1; then
+
         docker run -d \
           --name ${CONTAINER_NAME} \
           -p 5000:5000 \
           -e VERSION="previous" \
           -e SERVER="${SERVER}" \
           ${APP_NAME}:previous
+
     else
+
         echo "No previous image available for rollback."
         exit 1
+
     fi
 
     sleep 5
