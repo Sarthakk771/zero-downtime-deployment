@@ -17,8 +17,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    
-          steps:
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -28,10 +27,18 @@ jobs:
           python-version: "3.13"
 
       - name: Configure AWS credentials
-       uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::230355213948:role/zero-downtime-deployment-github-actions
-          aws-region: us-east-1
+          role-to-assume: "arn:aws:iam::230355213948:role/zero-downtime-deployment-github-actions"
+          aws-region: "us-east-1"
 
       - name: Install dependencies
         run: pip install -r app/requirements.txt
+
+      - name: Test application
+        run: |
+          python -m py_compile app/app.py
+          echo "Application syntax check passed"
+
+      - name: Build Docker image
+        run: docker build -t zero-downtime-app -f app/Dockerfile .
