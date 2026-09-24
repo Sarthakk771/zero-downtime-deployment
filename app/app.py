@@ -118,7 +118,7 @@ button:hover {{
 
         <div class="header">
             <h1>🚀 Zero-Downtime Deployment Platform</h1>
-            <p>Deployment Monitoring Dashboard</p>
+            <p>Deployment Monitoring Dashboard v2</p>
         </div>
 
         <div class="container">
