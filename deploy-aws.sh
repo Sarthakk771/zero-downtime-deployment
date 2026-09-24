@@ -22,6 +22,10 @@ echo "Saving current image for rollback..."
 
 if docker image inspect ${APP_NAME}:current >/dev/null 2>&1; then
     docker tag ${APP_NAME}:current ${APP_NAME}:previous
+elif docker image inspect ${APP_NAME}:latest >/dev/null 2>&1; then
+    docker tag ${APP_NAME}:latest ${APP_NAME}:previous
+elif docker image inspect ${APP_NAME} >/dev/null 2>&1; then
+    docker tag ${APP_NAME} ${APP_NAME}:previous
 fi
 
 echo "Building new Docker image..."
@@ -61,12 +65,17 @@ else
 
     docker rm -f ${CONTAINER_NAME} 2>/dev/null || true
 
-    docker run -d \
-      --name ${CONTAINER_NAME} \
-      -p 5000:5000 \
-      -e VERSION="previous" \
-      -e SERVER="${SERVER}" \
-      ${APP_NAME}:previous
+    if docker image inspect ${APP_NAME}:previous >/dev/null 2>&1; then
+        docker run -d \
+          --name ${CONTAINER_NAME} \
+          -p 5000:5000 \
+          -e VERSION="previous" \
+          -e SERVER="${SERVER}" \
+          ${APP_NAME}:previous
+    else
+        echo "No previous image available for rollback."
+        exit 1
+    fi
 
     sleep 5
 
