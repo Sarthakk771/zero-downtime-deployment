@@ -1,43 +1,100 @@
-Write-Host "Starting Zero-Downtime Deployment..." -ForegroundColor Cyan
+param(
+    [string]$NewVersion = "3.0",
+    [string]$PreviousVersion = "2.0",
+    [switch]$SimulateFailure
+)
 
-Write-Host "Updating App 1..." -ForegroundColor Yellow
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host " Zero-Downtime Deployment Platform" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
 
-docker stop app1
+function Check-Health {
+    param(
+        [string]$Url,
+        [string]$AppName
+    )
 
-docker compose up -d --build app1
+    Write-Host "Checking $AppName health..." -ForegroundColor Yellow
 
-Write-Host "Waiting for App 1 health check..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
 
-Start-Sleep -Seconds 5
+    try {
+        $response = Invoke-WebRequest $Url -UseBasicParsing -TimeoutSec 5
 
-$health1 = Invoke-WebRequest http://localhost:5000/health -UseBasicParsing
+        if ($response.StatusCode -eq 200) {
+            Write-Host "$AppName is healthy." -ForegroundColor Green
+            return $true
+        }
+    }
+    catch {
+        Write-Host "$AppName health check failed." -ForegroundColor Red
+        return $false
+    }
 
-if ($health1.StatusCode -eq 200) {
-    Write-Host "App 1 is healthy." -ForegroundColor Green
+    return $false
+}
+
+function Set-Version {
+    param(
+        [string]$Version
+    )
+
+    Write-Host "Setting application version to $Version..." -ForegroundColor Yellow
+
+    (Get-Content docker-compose.yml) `
+        -replace 'VERSION: "[0-9]+\.[0-9]+"', "VERSION: `"$Version`"" |
+        Set-Content docker-compose.yml
+}
+
+Write-Host "Deploying Version $NewVersion..." -ForegroundColor Cyan
+
+# Update App 1
+Write-Host "`nUpdating App 1..." -ForegroundColor Yellow
+
+Set-Version $NewVersion
+
+docker compose up -d --no-deps app1
+
+if ($SimulateFailure) {
+    Write-Host "Simulating deployment failure for testing..." -ForegroundColor Red
+    $app1Healthy = $false
 }
 else {
-    Write-Host "App 1 health check failed!" -ForegroundColor Red
+    $app1Healthy = Check-Health "http://localhost:5000/health" "App 1"
+}
+
+if (-not $app1Healthy) {
+
+    Write-Host "`nApp 1 deployment failed!" -ForegroundColor Red
+    Write-Host "Rolling back to Version $PreviousVersion..." -ForegroundColor Yellow
+
+    Set-Version $PreviousVersion
+    docker compose up -d --no-deps app1
+
+    Write-Host "App 1 rollback completed." -ForegroundColor Green
     exit 1
 }
 
-Write-Host "Updating App 2..." -ForegroundColor Yellow
+# Update App 2
+Write-Host "`nUpdating App 2..." -ForegroundColor Yellow
 
-docker stop app2
+docker compose up -d --no-deps app2
 
-docker compose up -d --build app2
+if (-not (Check-Health "http://localhost:5001/health" "App 2")) {
 
-Write-Host "Waiting for App 2 health check..." -ForegroundColor Yellow
+    Write-Host "`nApp 2 deployment failed!" -ForegroundColor Red
+    Write-Host "Rolling back to Version $PreviousVersion..." -ForegroundColor Yellow
 
-Start-Sleep -Seconds 5
+    Set-Version $PreviousVersion
 
-$health2 = Invoke-WebRequest http://localhost:5001/health -UseBasicParsing
+    docker compose up -d --no-deps app1
+    docker compose up -d --no-deps app2
 
-if ($health2.StatusCode -eq 200) {
-    Write-Host "App 2 is healthy." -ForegroundColor Green
-}
-else {
-    Write-Host "App 2 health check failed!" -ForegroundColor Red
+    Write-Host "Rollback completed successfully." -ForegroundColor Green
     exit 1
 }
 
-Write-Host "Deployment completed successfully!" -ForegroundColor Green
+Write-Host "`n========================================" -ForegroundColor Green
+Write-Host " Deployment completed successfully!" -ForegroundColor Green
+Write-Host " Version: $NewVersion" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
