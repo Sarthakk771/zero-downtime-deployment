@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Terraform generated files
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup

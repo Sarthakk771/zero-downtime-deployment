@@ -50,7 +50,7 @@ jobs:
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids i-00ac64af94e4afeb6 \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=['cd /home/ec2-user/zero-downtime-deployment && chmod +x deploy-aws.sh && CONTAINER_NAME=app1 SERVER=aws-app1 VERSION=${VERSION:0:7} ./deploy-aws.sh']" \
+            --parameters "commands=['cd /home/ec2-user/zero-downtime-deployment && git -c safe.directory=/home/ec2-user/zero-downtime-deployment pull origin main && sed -i \"s/\r$//\" deploy-aws.sh && chmod +x deploy-aws.sh && CONTAINER_NAME=app1 SERVER=aws-app1 VERSION=${VERSION:0:7} ./deploy-aws.sh']" \
             --query "Command.CommandId" \
             --output text)
 
