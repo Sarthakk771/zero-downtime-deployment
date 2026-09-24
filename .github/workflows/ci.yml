@@ -30,4 +30,4 @@ jobs:
           echo "Application syntax check passed"
 
       - name: Build Docker image
-        run: docker build -t zero-downtime-app .
+        run: docker build -t zero-downtime-app -f app/Dockerfile .
