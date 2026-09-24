@@ -26,9 +26,6 @@ def home():
 
 @app.route("/health")
 def health():
-    if os.getenv("FAIL_HEALTH", "false").lower() == "true":
-        return "Unhealthy", 500
-
     return "Healthy", 200
 
 

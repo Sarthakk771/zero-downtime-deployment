@@ -1,7 +1,6 @@
 param(
     [string]$NewVersion = "3.0",
-    [string]$PreviousVersion = "2.0",
-    [switch]$SimulateFailure
+    [string]$PreviousVersion = "2.0"
 )
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -55,16 +54,9 @@ Set-Version $NewVersion
 
 docker compose up -d --no-deps app1
 
-if ($SimulateFailure) {
-    Write-Host "Simulating deployment failure for testing..." -ForegroundColor Red
-    $app1Healthy = $false
-}
-else {
-    $app1Healthy = Check-Health "http://localhost:5000/health" "App 1"
-}
+$app1Healthy = Check-Health "http://localhost:5000/health" "App 1"
 
 if (-not $app1Healthy) {
-
     Write-Host "`nApp 1 deployment failed!" -ForegroundColor Red
     Write-Host "Rolling back to Version $PreviousVersion..." -ForegroundColor Yellow
 
