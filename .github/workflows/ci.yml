@@ -83,12 +83,14 @@ jobs:
             sleep 10
           done
 
-          echo "App 1 failed ALB health check."
+                    echo "App 1 failed ALB health check."
           exit 1
-                - name: Deploy to AWS App 2
+
+      - name: Deploy to AWS App 2
         env:
           VERSION: ${{ github.sha }}
         run: |
+          COMMAND_ID=$(aws ssm send-command \
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids i-0f47649b411b64c55 \
             --document-name "AWS-RunShellScript" \
@@ -127,3 +129,4 @@ jobs:
 
           echo "App 2 failed ALB health check."
           exit 1
+
