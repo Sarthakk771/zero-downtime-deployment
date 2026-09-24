@@ -13,7 +13,7 @@ echo "Version: $VERSION"
 echo "Server: $SERVER"
 echo "======================================"
 
-cd ~/zero-downtime-deployment
+cd /home/ec2-user/zero-downtime-deployment
 
 echo "Updating source code..."
 git pull origin main
