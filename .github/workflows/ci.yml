@@ -43,7 +43,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t zero-downtime-app -f app/Dockerfile .
 
-            - name: Deploy to AWS App 1
+      - name: Deploy to AWS App 1
         env:
           VERSION: ${{ github.sha }}
         run: |
